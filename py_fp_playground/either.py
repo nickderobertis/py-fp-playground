@@ -1,8 +1,9 @@
 import functools
+import inspect
 from abc import ABCMeta
 from dataclasses import dataclass
 from typing import (Any, Callable, Generic, NoReturn, Optional, Type, TypeVar,
-                    Union, cast)
+                    Union, cast, overload, Awaitable)
 
 from typing_extensions import Concatenate, ParamSpec, Protocol
 
@@ -57,7 +58,7 @@ class Either(Generic[A, B], metaclass=ABCMeta):
 
     def get(self) -> B:
         return self.fold(
-            lambda e: raise_exception(e),
+            lambda e: raise_exception_like(e),
             lambda a: a
         )
 
@@ -65,6 +66,12 @@ class Either(Generic[A, B], metaclass=ABCMeta):
         return self.fold(
             lambda e: default,
             lambda a: a
+        )
+
+    def or_else(self, default: C) -> "Either[C, B]":
+        return self.fold(
+            lambda e: Either.right(default),
+            lambda a: Either.right(a)
         )
 
     def either_fold(
@@ -237,13 +244,18 @@ class Left(Generic[A], Either[A, NoReturn]):
 class Right(Generic[B], Either[NoReturn, B]):
     value: B
 
-def raise_exception(x: BaseException) -> NoReturn:
-    raise x
+def raise_exception_like(x: Any) -> NoReturn:
+    if isinstance(x, BaseException):
+        raise x
+    elif x is None:
+        raise ValueError(f"Expected Some, got None.")
+    else:
+        raise RuntimeError(str(x))
 
 class EitherMonad(Generic[E_con]):
     def __lshift__(self, arg: Either[E_con, BB]) -> BB:
         return arg.fold(
-            lambda e: raise_exception(e),
+            lambda e: raise_exception_like(e),
             lambda a: a
         )
 
@@ -260,14 +272,37 @@ def monadic_method(
     return _wrapper
 
 
+@overload
+def monadic(
+    func: Callable[Concatenate[EitherMonad[E], P], Awaitable[A]]
+) -> Callable[P, Awaitable[Either[E, A]]]:
+    ...
+
+@overload
 def monadic(
     func: Callable[Concatenate[EitherMonad[E], P], A]
 ) -> Callable[P, Either[E, A]]:
+    ...
+
+def monadic(
+    func: Callable[Concatenate[EitherMonad[E], P], A] | Callable[Concatenate[EitherMonad[E], P], Awaitable[A]]
+) -> Callable[P, Either[E, A]] | Callable[P, Awaitable[Either[E, A]]]:
     @functools.wraps(func)
     def _wrapper(*args: P.args, **kwargs: P.kwargs) -> Either[E, A]:
         try:
             return Either.right(func(EitherMonad(), *args, **kwargs))
         except Exception as e:
             return Either.left(cast(E, e))
-    return _wrapper
+
+    if not inspect.iscoroutinefunction(func):
+        return _wrapper
+
+    @functools.wraps(func)
+    async def _wrapper_async(*args: P.args, **kwargs: P.kwargs) -> Either[E, A]:
+        try:
+            return Either.right(await func(EitherMonad(), *args, **kwargs))
+        except Exception as e:
+            return Either.left(cast(E, e))
+
+    return _wrapper_async
 
