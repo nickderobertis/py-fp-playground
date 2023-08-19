@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "py-fp-playground"
+version = "0.1.0"
+description = ""
+authors = ["Nick DeRobertis <whoopnip@gmail.com>"]
+readme = "README.md"
+packages = [{include = "py_fp_playground"}]
+
+[tool.poetry.dependencies]
+python = "~3.10"
+expression = "^4.2.4"
+zio-py = "^0.0.15"
+returns = {extras = ["compatible-mypy"], version = "^0.21.0"}
+requests = "^2.31.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
