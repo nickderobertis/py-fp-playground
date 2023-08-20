@@ -12,6 +12,7 @@ expression = "^4.2.4"
 zio-py = "^0.0.15"
 returns = {extras = ["compatible-mypy"], version = "^0.21.0"}
 requests = "^2.31.0"
+fn-py = "^0.6.0"
 
 
 [build-system]
