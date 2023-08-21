@@ -17,14 +17,14 @@ async def program(do: EitherMonad[ValueError | NotImplementedError | EOFError]) 
     #     lambda e: Either.right(1),
     #     lambda s: Either.right("good"),
     # )
-    good_name = do << (sub_program2(Some(15))).map_left(lambda e: EOFError())
+    good_name = do << (await sub_program2(Some(15))).map_left(lambda e: EOFError())
     match sub_program(Some(10)):
         case Left(x):
             print(f"Error: {x}")
         case Right(x):
             print(f"Success: {x}")
     something = sub_program()
-    something2 = sub_program2()
+    something2 = await sub_program2()
 
     bad_name = do << sub_program()
     print(f"Your name is: {good_name}")
@@ -55,10 +55,10 @@ def sub_program(something: Option[int] = Nothing) -> str:
 
 
 @catcher
-def sub_program2(something: Option[int] = Nothing) -> str:
+async def sub_program2(something: Option[int] = Nothing) -> str:
     x = 2
     print(f"{x=}")
-    raise ValueError("Wut?")
+    # raise ValueError("Wut?")
     return "yeah baby"
 
 
