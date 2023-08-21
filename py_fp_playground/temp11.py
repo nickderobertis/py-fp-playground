@@ -3,7 +3,7 @@ from typing import Union, Awaitable
 
 from py_fp_playground.either import EitherMonad, Either, monadic, Left, Right
 from py_fp_playground.option import Some, Nothing, Option
-from py_fp_playground.try_ import catch
+from py_fp_playground.catch import catch
 
 
 @monadic
